@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "scheme": "acme",
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "Trivia App",
+    "slug": "trivia-app",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ff1ea15e-cd96-4cae-a639-f19289ffa7b1"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ff1ea15e-cd96-4cae-a639-f19289ffa7b1"
+    },
+    "android": {},
+    "ios": {}
+  }
+}
