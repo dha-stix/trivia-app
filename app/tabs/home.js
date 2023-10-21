@@ -1,36 +1,27 @@
-import {
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-	Alert,
-} from "react-native";
+import { Pressable, ScrollView, Text, View, Alert } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useLayoutEffect, useState } from "react";
-import { getQuestions, topics } from "../../utils/lib";
-import { router } from "expo-router";
+import React, { useLayoutEffect, useState, useCallback } from "react";
 import {
-	useFonts,
-	Lato_100Thin,
-	Lato_300Light,
-	Lato_400Regular,
-	Lato_700Bold,
-	Lato_900Black,
-} from "@expo-google-fonts/lato";
+	getUserProfile,
+	handleSignOut,
+	storeSelectedTopics,
+	topics,
+} from "../../utils/lib";
+import { router } from "expo-router";
+import { styles } from "../../styles/homeScreen";
+import { useFonts } from "expo-font";
 
 const Home = () => {
 	const [selectedTopics, setSelectedTopics] = useState([]);
 	const [user, setUser] = useState({});
 	const [username, setUsername] = useState("");
-	let [fontsLoaded] = useFonts({
-		Lato_100Thin,
-		Lato_300Light,
-		Lato_400Regular,
-		Lato_700Bold,
-		Lato_900Black,
+
+	const [fontsLoaded] = useFonts({
+		extrabold: require("../../assets/fonts/Ubuntu-Bold.ttf"),
+		bold: require("../../assets/fonts/Ubuntu-Medium.ttf"),
+		normal: require("../../assets/fonts/Ubuntu-Regular.ttf"),
+		light: require("../../assets/fonts/Ubuntu-Light.ttf"),
 	});
 
 	const handleSelection = (topic) => {
@@ -45,16 +36,8 @@ const Home = () => {
 		}
 	};
 
-	const handleStartTest = () => {
-		const storeSelectedTopics = async () => {
-			try {
-				const questions = await getQuestions(selectedTopics);
-				await AsyncStorage.setItem("questions", JSON.stringify(questions));
-			} catch (e) {
-				console.error(e);
-			}
-		};
-		storeSelectedTopics();
+	const handleStartTest = async () => {
+		await storeSelectedTopics(selectedTopics);
 		Alert.alert("Start Test", "Are you sure?", [
 			{
 				text: "Cancel",
@@ -65,9 +48,9 @@ const Home = () => {
 		]);
 	};
 
-	const checkAuthStatus = async () => {
+	const checkAuthStatus = useCallback(async () => {
 		try {
-			const value = await AsyncStorage.getItem("user");
+			const value = await getUserProfile();
 			if (value !== null) {
 				const { email } = JSON.parse(value);
 				setUsername(email.substring(0, 6));
@@ -75,15 +58,11 @@ const Home = () => {
 		} catch (e) {
 			console.log(e);
 		}
-	};
-	const handleSignOut = async () => {
-		await AsyncStorage.clear();
-		router.push("/");
-	};
+	}, [user]);
 
 	useLayoutEffect(() => {
 		checkAuthStatus();
-	}, [user]);
+	}, [checkAuthStatus]);
 
 	if (!fontsLoaded) {
 		return null;
@@ -95,7 +74,10 @@ const Home = () => {
 						<Text style={styles.username}>Hi {username}</Text>
 						<Text style={styles.greeting}>Welcome back</Text>
 					</View>
-					<Pressable style={styles.avatar} onPress={() => handleSignOut()}>
+					<Pressable
+						style={styles.avatar}
+						onPress={() => handleSignOut(router)}
+					>
 						<FontAwesome name='user' size={30} color='#723881' />
 					</Pressable>
 				</View>
@@ -110,7 +92,7 @@ const Home = () => {
 							<Text style={styles.headline}>Test yourself</Text>
 							<Text
 								style={{
-									fontFamily: "Lato_300Light",
+									fontFamily: "light",
 									fontSize: 16,
 								}}
 							>
@@ -120,7 +102,10 @@ const Home = () => {
 					)}
 
 					{selectedTopics.length === 4 && (
-						<Pressable style={styles.startSection} onPress={handleStartTest}>
+						<Pressable
+							style={styles.startSection}
+							onPress={() => handleStartTest()}
+						>
 							<View style={styles.startContainer}>
 								<Text style={styles.startText}>START</Text>
 								<Ionicons
@@ -131,13 +116,13 @@ const Home = () => {
 							</View>
 
 							<Text style={styles.startSubText}>Answer 40 questions</Text>
-							<Text style={{ color: "#facc15", fontFamily: "Lato_300Light" }}>
+							<Text style={{ color: "#facc15", fontFamily: "light" }}>
 								{selectedTopics.join(", ")}
 							</Text>
 						</Pressable>
 					)}
 
-					<ScrollView style={{ height: 400 }}>
+					<ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 						{topics.map((t) => {
 							if (selectedTopics.includes(t.topic)) {
 								return (
@@ -175,84 +160,3 @@ const Home = () => {
 };
 
 export default Home;
-
-const styles = StyleSheet.create({
-	container: {
-		backgroundColor: "white",
-		flex: 1,
-	},
-	username: {
-		fontSize: 18,
-		color: "#333",
-		marginBottom: 3,
-		fontFamily: "Lato_400Regular",
-	},
-	greeting: {
-		fontSize: 28,
-		fontWeight: "bold",
-		color: "#6b21a8",
-		fontFamily: "Lato_700Bold",
-	},
-	avatar: {
-		backgroundColor: "#F1F1F1",
-		paddingHorizontal: 20,
-		paddingVertical: 15,
-		borderRadius: 50,
-	},
-	header: {
-		width: "100%",
-		flexDirection: "row",
-		justifyContent: "space-between",
-		padding: 20,
-	},
-	headline: {
-		fontWeight: "bold",
-		fontSize: 24,
-		fontFamily: "Lato_700Bold",
-		marginBottom: 7,
-	},
-	startContainer: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 10,
-	},
-	startSection: {
-		backgroundColor: "#723881",
-		padding: 15,
-		height: 200,
-		justifyContent: "center",
-		borderRadius: 7,
-		marginBottom: 15,
-	},
-	startText: {
-		fontSize: 34,
-		color: "#f1f1f1",
-		fontWeight: "bold",
-		fontFamily: "Lato_700Bold",
-	},
-	startSubText: {
-		fontSize: 19,
-		color: "#f4f4f4",
-		marginBottom: 7,
-		fontFamily: "Lato_400Regular",
-	},
-	topic: {
-		fontSize: 24,
-		fontWeight: "bold",
-		fontFamily: "Lato_700Bold",
-	},
-	section: {
-		width: "100%",
-		paddingHorizontal: 17,
-		paddingVertical: 10,
-	},
-	banner: {
-		backgroundColor: "#F5F5F5",
-		borderRadius: 10,
-		paddingHorizontal: 15,
-		paddingVertical: 25,
-		justifyContent: "center",
-		marginBottom: 15,
-	},
-});

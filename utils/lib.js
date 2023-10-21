@@ -1,4 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
+import { db } from "../firebaseConfig";
+
+export const getCurrentDate = () => {
+	const currentDate = new Date();
+	const year = currentDate.getFullYear();
+	const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+	const day = String(currentDate.getDate()).padStart(2, "0");
+	return `${day}-${month}-${year}`;
+};
+
+export const isValidEmail = (text) => {
+	const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+	return emailRegex.test(text);
+};
 
 export const topics = [
 	{
@@ -38,6 +53,48 @@ export const topics = [
 	},
 ];
 
+export const saveUserProfile = (value) => {
+	AsyncStorage.setItem("user", JSON.stringify(value)).catch((err) =>
+		console.error(err)
+	);
+};
+
+export const getUserProfile = async () => {
+	try {
+		const data = await AsyncStorage.getItem("user");
+		return data;
+	} catch (e) {
+		console.error(err);
+	}
+};
+
+export const storeSelectedTopics = async (selectedTopics) => {
+	try {
+		const questions = await getQuestions(selectedTopics);
+		await AsyncStorage.setItem("questions", JSON.stringify(questions));
+	} catch (e) {
+		console.error(e);
+	}
+};
+
+export const handleSignOut = async (router) => {
+	await AsyncStorage.clear();
+	router.push("/login");
+};
+
+export const updateOnboardingStatus = () => {
+	AsyncStorage.setItem("onboarded", "true").catch((err) => console.error(err));
+};
+
+export const checkOnboardingStatus = async () => {
+	try {
+		const data = await AsyncStorage.getItem("onboarded");
+		return data;
+	} catch (e) {
+		console.error(err);
+	}
+};
+
 export const getQuestions = async (array) => {
 	const selectedQuestions = topics.filter((obj) => array.includes(obj.topic));
 	const endpoints = selectedQuestions.map((question) => question.url);
@@ -61,21 +118,19 @@ export const getQuestions = async (array) => {
 	}
 };
 
-export const getCurrentDate = () => {
-	const currentDate = new Date();
-	const year = currentDate.getFullYear();
-	const month = String(currentDate.getMonth() + 1).padStart(2, "0");
-	const day = String(currentDate.getDate()).padStart(2, "0");
-	return `${day}-${month}-${year}`;
-};
-
-export const isValidEmail = (text) => {
-	const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-	return emailRegex.test(text);
-};
-
-export const saveUserProfile = (value) => {
-	AsyncStorage.setItem("user", JSON.stringify(value)).catch((err) =>
-		console.error(err)
+export const fetchLeaderboard = async () => {
+	const q1 = query(
+		collection(db, "users"),
+		orderBy("totalScore", "desc"),
+		limit(10)
 	);
+	const querySnapshot = await getDocs(q1);
+	const leaderboard = [];
+	querySnapshot.forEach((doc) => {
+		leaderboard.push({
+			email: doc.data().email,
+			t_score: doc.data().totalScore,
+		});
+	});
+	return leaderboard;
 };
